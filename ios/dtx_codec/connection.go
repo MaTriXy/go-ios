@@ -117,12 +117,22 @@ func (g GlobalDispatcher) Dispatch(msg Message) {
 		}
 		// TODO: use the dispatchFunctions map
 		if "outputReceived:fromProcess:atTime:" == msg.Payload[0] {
-			logmsg, err := nskeyedarchiver.Unarchive(msg.Auxiliary.GetArguments()[0].([]byte))
+			args := msg.Auxiliary.GetArguments()
+			if len(args) < 3 {
+				log.Warnf("outputReceived:fromProcess:atTime: expected at least 3 arguments, got %d", len(args))
+				return
+			}
+			logBytes, ok := args[0].([]byte)
+			if !ok {
+				log.Warnf("outputReceived:fromProcess:atTime: expected []byte argument, got %T", args[0])
+				return
+			}
+			logmsg, err := nskeyedarchiver.Unarchive(logBytes)
 			if err == nil {
 				log.WithFields(log.Fields{
 					"msg":  logmsg[0],
-					"pid":  msg.Auxiliary.GetArguments()[1],
-					"time": msg.Auxiliary.GetArguments()[2],
+					"pid":  args[1],
+					"time": args[2],
 				}).Debug("outputReceived:fromProcess:atTime:")
 			}
 			return
